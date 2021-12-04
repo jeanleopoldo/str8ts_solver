@@ -70,6 +70,9 @@ def canAssignAnyNumber(grid, row, col, number):
 def getElementsUntilStatic(line, index, elements):
     if index == -1:
         return elements
+
+    if index >= len(line):
+        index = (len(line)-1)
     if line[index] == -1:
         return elements
     element = line[index]
