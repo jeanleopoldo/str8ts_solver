@@ -12,12 +12,14 @@ def contains(elements, number):
     return number in elements
 
 def getRowElements(grid, row, col, elements):
-    size = len(grid)
-    if col == size:
+    if col == -1:
         return elements
     element = grid[row][col]
     elements.append(element)
-    return getRowElements(grid, row, (col+1), elements)
+
+    if grid[row][col-1] == -1:
+        return elements
+    return getRowElements(grid, row, (col-1), elements)
 
 def getColElements(grid, row, col, elements):
     if row == -1: 
@@ -25,14 +27,17 @@ def getColElements(grid, row, col, elements):
     
     element = grid[row][col]
     elements.append(element)
+
+    if grid[row-1][col] == -1:
+        return elements
     return getColElements(grid, (row-1), col, elements)
 
 def hasNumberInCol(grid, row, col, number):
-    colElements = getColElements(grid, 0, col, [])
+    colElements = getColElements(grid, row, col, [])
     return number in colElements
 
 def hasNumberInRow(grid, row, col, number):
-    rowElements = getRowElements(grid, row, 0, [])
+    rowElements = getRowElements(grid, row, col, [])
     return contains(rowElements, number)
 
 def canAssignNumber(grid, row, col, number):
@@ -42,6 +47,8 @@ def canAssignNumber(grid, row, col, number):
         return False
     if hasNumberInCol(grid, row, col, number):
         return False
+    if not checkForSequentialLine(grid, row, col, number):
+        return False
     
     return True
 
@@ -49,7 +56,7 @@ def canAssignNumber(grid, row, col, number):
 # if cell is static, returns true for flow purposes
 def canAssignAnyNumber(grid, row, col, number):
     size = len(grid)
-    if number == size:
+    if number == (size+1):
         return False
     if isStatic(grid, row, col):
         return True
@@ -100,36 +107,39 @@ def isSequential(elements, index):
 # 2. it sorts elements
 # it goes backwards, coming from the end to the begining
 
-def checkForSequentialRow(grid, row, col):
-    rowEle   = getRowElements(grid, row, 0, [])
-    elements = getElementsUntilStatic(rowEle, col, [])
-    elements.sort()
-    if size == 0:
-        return True
-    return isSequential(elements, 0)
-
-def checkForSequentialCol(grid, row, col):
-    rowEle   = getRowElements(grid, 0, col, [])
-    elements = getElementsUntilStatic(rowEle, row, [])
-    size == (len(elements))
+def checkForSequentialRow(grid, row, col, number):
+    rowEle   = getRowElements(grid, row, col, [])
+    elements = getElementsUntilStatic(rowEle, len(rowEle)-1, [])
+    elements.append(number)
+    filtered = [ i for i in elements if i > 0 ]
+    filtered.sort()
+    size == (len(filtered))
     if size == 1:
         return True
-    return isSequential(elements, (size-1))
+    return isSequential(filtered, 0)
+
+def checkForSequentialCol(grid, row, col, number):
+    colEle   = getColElements(grid, row, col, [])
+    elements = getElementsUntilStatic(colEle, len(colEle)-1, [])
+    elements.append(number)
+
+    filtered = []
+    for i in range(len(elements)):
+        if elements[i] > 0:
+            filtered.append(elements[i])
+    filtered.sort()
+    size == (len(filtered))
+    if size == 1:
+        return True
+    return isSequential(filtered, 0)
 
 # undo current changed made
-def failedAssigningNumber(grid, row, col):
+def failedAssigningNumber(grid, row, col, number):
+    number = number+1
     grid[row][col] = 0
     if canAssignAnyNumber(grid, row, col, 1):
-        return solveStr8ts(grid, row, col, (random.randint(1, size)))
-    
-    col = col-1
-    if col == 0:
-        row = row-1
-        col = len(grid)-1
-    if row == 0 and col == 0:
-        return False
-    grid[row][col] = 0
-    return solveStr8ts(grid, row, col, (random.randint(1, size)))
+        return solveStr8ts(grid, row, col, number)
+    return False
 
 def needsToCheckRow(grid, row, col):
     size = len(grid)
@@ -147,12 +157,26 @@ def needsToCheckCol(grid, row, col):
         return True
     return False
     
+def checkForSequentialLine(grid, row, col, number):
+    needToCheckRow = col == (size-1) or needsToCheckRow(grid, row, col)
+    needToCheckCol = row == (size-1) or needsToCheckCol(grid, row, col)
+    if needToCheckRow:
+        rowSeq = checkForSequentialRow(grid, row, col, number)
+    if needToCheckCol:
+        colSeq = checkForSequentialCol(grid, row, col, number)
+
+    if (needToCheckRow and not rowSeq) or (needToCheckCol and not colSeq):
+        return False
+    return True
+
+    
 # solver method
 # basically, it is a recursive depth first search, i.e, backtracking
 # although here are used randomic numbers instead of sequential numbers
 def solveStr8ts(grid, row, col, number):
-    
     size = len(grid)
+    if size+1 <= (number):
+        number = 1
     # condition to check if it is end of table
     # if true: all cell has been filled
     if row == size-1 and col == size:
@@ -165,12 +189,12 @@ def solveStr8ts(grid, row, col, number):
     
     # condition to check it is a static cell (here is '-1')
     if isStatic(grid, row, col):
-        return solveStr8ts(grid, row, (col+1), (random.randint(1, size)))
+        return solveStr8ts(grid, row, (col+1), number)
     
     # condition to check if this cell has been filled already
     # if true, go to next cell
     if cellHasBeenAssigned(grid, row, col):
-        solveStr8ts(grid, row, (col+1), (random.randint(1, size)))
+        return solveStr8ts(grid, row, (col+1), number)
     
     # condition to check whether number can be assigned to cell [row][col]
     # if true: assign number
@@ -179,42 +203,21 @@ def solveStr8ts(grid, row, col, number):
         grid[row][col] = number
         number = number+1
         size == len(grid)
-
-        # condition to check if it needs to check for sequential elements in row
-        if row == (size-1) or needsToCheckRow(grid, row, col):
-
-            # condition to check whether it row has sequential elements
-            # if true: move on
-            # if false: discard this branch of computation
-            if checkForSequentialRow(grid, row, col):
-                return solveStr8ts(grid, row, (col+1), random.randint(1, size))
-            else:
-                failedAssigningNumber(grid, row, col)
-        
-        # condition to check if it needs to check for sequential elements in column
-        if col == (size-1) or needsToCheckCol(grid, row, col):
-            # condition to check whether it column has sequential elements
-            # if true: move on
-            # if false: discard this branch of computation
-            if(checkForSequentialCol(grid, row, col)):
-                return solveStr8ts(grid, row, (col+1), random.randint(1, size))
-            else:
-                return failedAssigningNumber(grid, row, col)
-        return solveStr8ts(grid, row, (col+1), (random.randint(1, size)))
+        return solveStr8ts(grid, row, (col+1), number)
     else:
-        return failedAssigningNumber(grid, row, col)
+        return failedAssigningNumber(grid, row, col, number)
     
 if __name__ == "__main__":
     grid = [[-1,  0,  0, -1],
             [-1,  0,  0,  0],
             [-1,  0,  1,  0],
-            [ 4,  0,  0,  0]]
+            [ 1,  0,  0,  0]]
 
     size = len(grid)
 
     number = random.randint(1, size)
 
-    if not solveStr8ts(grid, 0, 0, number):
+    if not solveStr8ts(grid, 0, 0, 1):
         print("could not solve")
     else:
         print(grid)
