@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 module Main where
 
 contains :: [Int] -> Int -> Bool
@@ -73,10 +72,6 @@ hasNumberInCol grid row col number =
     let elements = getColElements grid row col []
     in
         contains elements number
-
-
-    -- if index >= len(line):
-    --     index = (len(line)-1)
 
 getElementsUntilStatic :: [Int] -> Int -> [Int] -> [Int]
 getElementsUntilStatic line index elements =
