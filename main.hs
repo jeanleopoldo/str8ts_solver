@@ -2,11 +2,7 @@
 module Main where
 
 contains :: [Int] -> Int -> Bool
-contains elements element =
-    -- must check if it works
-    let b = filter (== element) elements
-    in
-        null b
+contains elements element = element `notElem` elements
 
 cellHasBeenAssigned :: [[Int]] -> Int -> Int -> Bool
 cellHasBeenAssigned grid row col =
@@ -41,7 +37,7 @@ getRowElements grid row col elements =
     else
         let e = getElement grid row col
         in
-            let h = elements ++ [e]            
+            let h = elements ++ [e]
             in
                 let j = getElement grid row (col-1)
                 in
@@ -67,13 +63,37 @@ getColElements grid row col elements =
                         getRowElements grid (row-1) col elements
 
 hasNumberInRow :: [[Int]] -> Int -> Int -> Int -> Bool
-hasNumberInRow grid row col number = False
+hasNumberInRow grid row col number =
+    let elements = getRowElements grid row col []
+    in
+        contains elements number
 
 hasNumberInCol :: [[Int]] -> Int -> Int -> Int -> Bool
-hasNumberInCol grid row col number = False
+hasNumberInCol grid row col number =
+    let elements = getColElements grid row col []
+    in
+        contains elements number
+
+getElementsUntilStatic :: [Int] -> Int -> [Int] -> [Int]
+getElementsUntilStatic row index elements = []
+
+isSequential :: [Int] -> Int -> Bool
+isSequential [] _ = True
+isSequential elements index =
+    (index == length elements +1) ||
+    (let diff = abs (elements !! index) - (elements !! index+1)
+    in
+        diff == 1 || isSequential elements (index+1))
 
 checkForSequentialLine :: [[Int]] -> Int -> Int -> Int -> Bool
-checkForSequentialLine grid row col number = True
+checkForSequentialLine grid row col number =
+    let rowElements = getRowElements grid row col []
+    in
+        let elements = getElementsUntilStatic rowElements (length rowElements-1) []
+        in
+            let filtered = filter (>0) elements
+            in
+                (length filtered == 1) || isSequential filtered number
 
 canAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
 canAssignNumber grid row col number = not (cellHasBeenAssigned grid row col
@@ -98,7 +118,7 @@ failedToAssignNumber grid row col number =
 
 solve :: [[Int]] -> Int -> Int-> Int -> Bool
 solve grid row col number
-  | isStatic grid row col  || cellHasBeenAssigned grid row col =
+  | isStatic grid row col  || cellHasBeenAssigned grid row col = 
   solve grid row (col+1) number
   | canAssignNumber grid row col number =
     let a = addElementToCell grid row col number
@@ -108,4 +128,12 @@ solve grid row col number
     failedToAssignNumber grid row col number
 
 main = do
-    print ""
+    let grid = [[-1,  0,  0, -1],
+                [-1,  0,  0,  0],
+                [-1,  0,  1,  0],
+                [ 1,  0,  0,  0]]
+    let s = solve grid 0 0 1
+    if s then
+        print grid
+    else
+        print "could not solve"
