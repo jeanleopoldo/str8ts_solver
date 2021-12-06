@@ -34,17 +34,37 @@ addElementToCell grid row col number =
         in
             take row grid  ++ newLine : drop row grid
 
-getRowElements :: [[Int]] -> Int -> Int -> [Int] -> [Int]
-getRowElements grid row col elements = elements
-        -- let i = getElement grid row col
-        -- in
-        --     elements ++ [i]
-        --     let next = getElement grid row (col-1)
-        --     in
-        --         if next == -1 then
-        --             elements
-        --         else
-        --             getRowElements grid row (col-1) elements
+getRowElements :: [[Int]] -> Int -> Int -> [Int]-> [Int]
+getRowElements grid row col elements =
+    if col == -1 then
+        elements
+    else
+        let e = getElement grid row col
+        in
+            let h = elements ++ [e]            
+            in
+                let j = getElement grid row (col-1)
+                in
+                    if j == -1 then
+                        elements
+                    else
+                        getRowElements grid row (col-1) elements
+
+getColElements :: [[Int]] -> Int -> Int -> [Int] -> [Int]
+getColElements grid row col elements =
+    if row == -1 then
+        elements
+    else
+        let e = getElement grid row col
+        in
+            let h = elements ++ [e]
+            in
+                let j = getElement grid (row-1) col
+                in
+                    if j == -1 then
+                        elements
+                    else
+                        getRowElements grid (row-1) col elements
 
 hasNumberInRow :: [[Int]] -> Int -> Int -> Int -> Bool
 hasNumberInRow grid row col number = False
@@ -67,12 +87,14 @@ canAssignAnyNumber grid row col number =
     (isStatic grid row col
         || (not (cellHasBeenAssigned grid row col)
             && not (hasNumberInRow grid row col number)
-            && not (hasNumberInCol grid row col number)))
+            && not (hasNumberInCol grid row col number))) || canAssignAnyNumber grid row col (number+1)
 
 failedToAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
-failedToAssignNumber grid row col number = True
-    -- addElementToCell grid row col 0
-    -- True
+failedToAssignNumber grid row col number =
+    let j = addElementToCell grid row col 0
+    in
+        canAssignAnyNumber grid row col 1 && solve grid row col (number+1)
+
 
 solve :: [[Int]] -> Int -> Int-> Int -> Bool
 solve grid row col number
