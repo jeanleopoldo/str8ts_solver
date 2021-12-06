@@ -8,6 +8,8 @@ It uses backtracking to solve the problem.
 - You can also run it from the terminal following the commands:
     - ghc --make main.hs -o program
     - ./program
+
+* All commands are meant to run on linux only.
 ## Informations
 - The table must be set statically via code. It accepts any table of size bigger than 0
 - The static cells are represented by -1
