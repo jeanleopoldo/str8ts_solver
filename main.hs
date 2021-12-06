@@ -61,6 +61,13 @@ canAssignNumber grid row col number = not (cellHasBeenAssigned grid row col
                                             || hasNumberInCol grid row col number
                                             || not (checkForSequentialLine grid row col number))
 
+canAssignAnyNumber :: [[Int]] -> Int -> Int -> Int -> Bool
+canAssignAnyNumber grid row col number =
+    number /= (length grid+1) &&
+    (isStatic grid row col
+        || (not (cellHasBeenAssigned grid row col)
+            && not (hasNumberInRow grid row col number)
+            && not (hasNumberInCol grid row col number)))
 
 failedToAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
 failedToAssignNumber grid row col number = True
