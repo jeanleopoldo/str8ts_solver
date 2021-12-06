@@ -42,9 +42,9 @@ getRowElements grid row col elements =
                 let j = getElement grid row (col-1)
                 in
                     if j == -1 then
-                        elements
+                        h
                     else
-                        getRowElements grid row (col-1) elements
+                        getRowElements grid row (col-1) h
 
 getColElements :: [[Int]] -> Int -> Int -> [Int] -> [Int]
 getColElements grid row col elements =
@@ -58,9 +58,9 @@ getColElements grid row col elements =
                 let j = getElement grid (row-1) col
                 in
                     if j == -1 then
-                        elements
+                        h
                     else
-                        getRowElements grid (row-1) col elements
+                        getRowElements grid (row-1) col h
 
 hasNumberInRow :: [[Int]] -> Int -> Int -> Int -> Bool
 hasNumberInRow grid row col number =
@@ -74,8 +74,20 @@ hasNumberInCol grid row col number =
     in
         contains elements number
 
+
+    -- if index >= len(line):
+    --     index = (len(line)-1)
+
 getElementsUntilStatic :: [Int] -> Int -> [Int] -> [Int]
-getElementsUntilStatic row index elements = []
+getElementsUntilStatic line index elements =
+    if (line !! index == -1) || (index == -1) then
+        elements
+    else
+        let el = line !! index
+        in
+            let j = elements ++ [el]
+            in
+                getElementsUntilStatic line (index-1) j
 
 isSequential :: [Int] -> Int -> Bool
 isSequential [] _ = True
