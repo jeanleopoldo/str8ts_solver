@@ -31,51 +31,41 @@ addElementToCell grid row col number =
 
 getRowElements :: [[Int]] -> Int -> Int -> [Int]-> [Int]
 getRowElements grid row col elements =
-    if col == -1 then
-        elements
-    else
-        let e = getElement grid row col
+    let e = getElement grid row col
+    in
+        let h = elements ++ [e]
         in
-            let h = elements ++ [e]
-            in
-                let j = getElement grid row (col-1)
-                in
-                    if j == -1 then
-                        h
-                    else
-                        getRowElements grid row (col-1) h
+            if col == 0 then
+                h
+            else
+                getRowElements grid row (col-1) h
 
 getColElements :: [[Int]] -> Int -> Int -> [Int] -> [Int]
 getColElements grid row col elements =
-    if row == -1 then
-        elements
-    else
-        let e = getElement grid row col
+    let e = getElement grid row col
+    in
+        let h = elements ++ [e]
         in
-            let h = elements ++ [e]
-            in
-                let j = getElement grid (row-1) col
-                in
-                    if j == -1 then
-                        h
-                    else
-                        getRowElements grid (row-1) col h
+            if row == 0 then
+                h
+            else
+                getColElements grid (row-1) col h
 
 hasNumberInRow :: [[Int]] -> Int -> Int -> Int -> Bool
 hasNumberInRow grid row col number =
     let elements = getRowElements grid row col []
     in
-        contains elements number
+        not (null elements) && contains elements number
 
 hasNumberInCol :: [[Int]] -> Int -> Int -> Int -> Bool
 hasNumberInCol grid row col number =
     let elements = getColElements grid row col []
     in
-        contains elements number
+        not (null elements) && contains elements number
 
 getElementsUntilStatic :: [Int] -> Int -> [Int] -> [Int]
 getElementsUntilStatic line index elements =
-    if (line !! index == -1) || (index == -1) then
+    if line !! index == -1 || index == -1 then
         elements
     else
         let el = line !! index
