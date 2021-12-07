@@ -1,4 +1,5 @@
 module Main where
+import Data.List
 
 contains :: [Int] -> Int -> Bool
 contains elements element = element `elem` elements
@@ -70,9 +71,7 @@ getElementsUntilStatic line index elements =
     else
         let el = line !! index
         in
-            let j = elements ++ [el]
-            in
-                getElementsUntilStatic line (index-1) j
+            getElementsUntilStatic line (index-1) (elements ++ [el])
 
 -- this method goes elements by elements checking if
 -- diff between current element and next element is == 1
@@ -80,27 +79,29 @@ getElementsUntilStatic line index elements =
 isSequential :: [Int] -> Int -> Bool
 isSequential [] _ = True
 isSequential elements index =
-    index == length elements +1 ||
-    (let diff = abs (elements !! index) - (elements !! index+1)
-    in
-        diff == 1 || isSequential elements (index+1))
+    (index == length elements-1)
+    || (diff (elements !! index) (elements !! (index+1)) && isSequential elements (index+1))
+
+diff:: Int -> Int -> Bool
+diff a b = abs (a-b) == 1
 
 -- TODO
 checkForSequentialRow :: [[Int]] -> Int -> Int -> Int -> Bool
 checkForSequentialRow grid row col number =
     let rowElements = getRowElements grid row col []
     in
-        let elements = getElementsUntilStatic rowElements (length rowElements-1) []
+
+        let elements = getElementsUntilStatic (sort rowElements) (length rowElements-1) []
         in
             let filtered = filter (>0) elements
             in
-                length filtered == 1 || isSequential filtered number
+                length filtered == 1 || isSequential (sort filtered) 0
 
 checkForSequentialCol:: [[Int]] -> Int -> Int -> Int -> Bool
 checkForSequentialCol grid row col number =
     let colElements = getColElements grid row col []
     in
-        let elements = getElementsUntilStatic colElements (length colElements-1) []
+        let elements = getElementsUntilStatic (sort colElements) (length colElements-1) []
         in
             let filtered = filter (>0) elements
             in
