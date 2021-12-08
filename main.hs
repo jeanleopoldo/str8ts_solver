@@ -93,14 +93,6 @@ isSequential elements index =
 diff:: Int -> Int -> Bool
 diff a b = abs (a-b) == 1
 
-
-
-failedToAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
-failedToAssignNumber grid row col number =
-    let j = addElementToCell grid row col 0
-    in
-        canAssignAnyNumber grid row col 1 && solve grid row col (number+1)
-
 -- solver method
 -- basically, it is a recursive depth first search, i.e, backtracking
 -- although here are used randomic numbers instead of sequential numbers
@@ -111,23 +103,30 @@ solve :: [[Int]] -> Int -> Int-> Int -> Bool
 solve grid row col number =
     let size = length grid
     in
-        row == size-1 && col == size || (
-        if col == size then
-            solve grid (row+1) 0 number
+        if number == size then
+            False
         else
-            if isStatic grid row col || cellHasBeenAssigned grid row col then
-                solve grid row (col+1) (number+1)
+            if row == ((size) - 1) && (col == size) then
+                True
             else
-                if canAssignNumber grid row col number then
-                    let h = addElementToCell grid row col
-                    in
-                        solve grid row (col+1) (number+1)
+                if col == size then
+                    solve grid (row+1) 0 number
                 else
-                    let h = addElementToCell grid row col 0
-                    in
-                        False
+                    if canAssignNumber grid row col number then
+                        let add = addElementToCell grid row col number
+                        in
+                            solve grid row (col+1) (number+1)
+                    else
+                        let add = addElementToCell grid row col 0
+                        in
+                            solve add row col 1
 
-checkForSequentialCol :: [[Int]] -> Int -> Int -> Bool
+
+solveGrid :: [[Int]] -> Int -> Int -> Int -> Bool
+solveGrid grid row col number =
+    row /= length grid && (solve grid row col number || solve grid (row+1) col number)
+
+checkForSequentialCol:: [[Int]] -> Int -> Int -> Bool
 checkForSequentialCol grid row col =
     let colElements = getColElements grid row col []
     in
@@ -171,16 +170,14 @@ canAssignNumber grid row col number =
     && not (hasNumberInCol grid row col number)
 
 main = do
-    let grid =  [[ 1,  1, -1,  3],
-                 [ 2,  3,  1,  4],
-                 [-1,  4,  3,  2],
+    let grid =  [[ 0,  0, -1,  0],
+                 [ 2,  0,  1,  0],
+                 [-1,  0,  0,  -1],
                  [-1,  2,  2,  1]]
 
-    let re = solve
+    let s = solveGrid grid 0 0 1
 
-    if re then
-        print "BOOH YA"
+    if s then
         print grid
     else
         print "OH NO! I could not solve"
-        print grid
