@@ -22,13 +22,21 @@ getElement grid row col =
     in
         line !! col
 
+deleteFromIndex :: Int -> [a] -> [a]
+deleteFromIndex _ []     = []
+deleteFromIndex index (a:as)
+   | index == 0    = as
+   | otherwise = a : deleteFromIndex (index-1) as
+
 addElementToCell :: [[Int]] -> Int -> Int -> Int -> [[Int]]
 addElementToCell grid row col number =
     let line = grid !! row
     in
-        let newLine = take col line ++ number : drop col line
+        let addedCell = take col line ++ number : drop col line
         in
-            take row grid  ++ newLine : drop row grid
+            let newLine = deleteFromIndex (col+1) addedCell
+            in
+                take row grid  ++ newLine : drop row grid
 
 getRowElements :: [[Int]] -> Int -> Int -> [Int]-> [Int]
 getRowElements grid row col elements =
@@ -66,12 +74,12 @@ hasNumberInCol grid row col number =
 
 getElementsUntilStatic :: [Int] -> Int -> [Int] -> [Int]
 getElementsUntilStatic line index elements =
-    if line !! index == -1 || index == -1 then
-        elements
-    else
-        let el = line !! index
-        in
-            getElementsUntilStatic line (index-1) (elements ++ [el])
+    let el = line !! index
+    in
+        if index == length line -1 || line !! index == -1 then
+            elements ++ [el]
+        else
+            getElementsUntilStatic line (index+1) (elements ++ [el])
 
 -- this method goes elements by elements checking if
 -- diff between current element and next element is == 1
@@ -79,72 +87,13 @@ getElementsUntilStatic line index elements =
 isSequential :: [Int] -> Int -> Bool
 isSequential [] _ = True
 isSequential elements index =
-    (index == length elements-1)
-    || (diff (elements !! index) (elements !! (index+1)) && isSequential elements (index+1))
+    index == length elements-1
+    || diff (elements !! index) (elements !! (index+1)) && isSequential elements (index+1)
 
 diff:: Int -> Int -> Bool
 diff a b = abs (a-b) == 1
 
--- TODO
-checkForSequentialRow :: [[Int]] -> Int -> Int -> Int -> Bool
-checkForSequentialRow grid row col number =
-    let rowElements = getRowElements grid row col []
-    in
 
-        let elements = getElementsUntilStatic (sort rowElements) (length rowElements-1) []
-        in
-            let filtered = filter (>0) elements
-            in
-                length filtered == 1 || isSequential (sort filtered) 0
-
-checkForSequentialCol:: [[Int]] -> Int -> Int -> Int -> Bool
-checkForSequentialCol grid row col number =
-    let colElements = getColElements grid row col []
-    in
-        let elements = getElementsUntilStatic (sort colElements) (length colElements-1) []
-        in
-            let filtered = filter (>0) elements
-            in
-                length filtered==1 || isSequential filtered number
-
-needsToCheckRow :: [[Int]] -> Int -> Int -> Bool
-needsToCheckRow grid row col =
-    let size = length grid
-    in
-        col == size-1 || getElement grid row (col+1) == -1
-
-needsToCheckCol :: [[Int]] -> Int -> Int -> Bool
-needsToCheckCol grid row col =
-    let size = length grid
-    in
-        row == size-1 || getElement grid (row+1) col == -1
-
-sequentialRow :: [[Int]] -> Int -> Int -> Int -> Bool
-sequentialRow grid row col number = not (needsToCheckRow grid row col) || checkForSequentialRow grid row col number
-
-sequentialCol :: [[Int]] -> Int -> Int -> Int -> Bool
-sequentialCol grid row col number = not (needsToCheckCol grid row col) || checkForSequentialCol grid row col number
-
-canAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
-canAssignNumber grid row col number = not (cellHasBeenAssigned grid row col
-                                            || hasNumberInRow grid row col number
-                                            || hasNumberInCol grid row col number)
-                                            && sequentialRow grid row col number
-                                            && sequentialCol grid row col number
-
--- method recursively verifies if there is at least one number that can be placed into cell
--- if cell is static, returns true for flow purposes
--- three are the condition to assing a number into a cell:
---     1. no number had been assinged to the cell
---     2. the number must not be in the row this cell is in
---     3. the number must not be in the column this cell is in
-canAssignAnyNumber :: [[Int]] -> Int -> Int -> Int -> Bool
-canAssignAnyNumber grid row col number =
-    number /= length grid+1 &&
-    (isStatic grid row col
-        || not (cellHasBeenAssigned grid row col)
-            && not (hasNumberInRow grid row col number)
-            && not (hasNumberInCol grid row col number)) || canAssignAnyNumber grid row col (number+1)
 
 failedToAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
 failedToAssignNumber grid row col number =
@@ -152,25 +101,86 @@ failedToAssignNumber grid row col number =
     in
         canAssignAnyNumber grid row col 1 && solve grid row col (number+1)
 
+-- solver method
+-- basically, it is a recursive depth first search, i.e, backtracking
+-- although here are used randomic numbers instead of sequential numbers
 
+-- condition to check if it is end of table
+-- if true: all cell has been filled
 solve :: [[Int]] -> Int -> Int-> Int -> Bool
-solve grid row col number
-  | isStatic grid row col  || cellHasBeenAssigned grid row col = 
-  solve grid row (col+1) number
-  | canAssignNumber grid row col number =
-    let a = addElementToCell grid row col number
+solve grid row col number =
+    let size = length grid
     in
-        solve grid row (col+1) (number+1)
-  | otherwise =
-    failedToAssignNumber grid row col number
+        row == size-1 && col == size || (
+        if col == size then
+            solve grid (row+1) 0 number
+        else
+            if isStatic grid row col || cellHasBeenAssigned grid row col then
+                solve grid row (col+1) (number+1)
+            else
+                if canAssignNumber grid row col number then
+                    let h = addElementToCell grid row col
+                    in
+                        solve grid row (col+1) (number+1)
+                else
+                    let h = addElementToCell grid row col 0
+                    in
+                        False
+
+checkForSequentialCol :: [[Int]] -> Int -> Int -> Bool
+checkForSequentialCol grid row col =
+    let colElements = getColElements grid row col []
+    in
+        let elements = getElementsUntilStatic colElements 0 []
+        in
+            length elements==1 || isSequential (sort elements) 0
+
+-- TODO
+checkForSequentialRow :: [[Int]] -> Int -> Int ->  Bool
+checkForSequentialRow grid row col =
+    -- get row elements
+    let rowElements = getRowElements grid row col []
+    in
+        -- get list of numbers until it finds initial edge of the table
+        let elements = getElementsUntilStatic rowElements 0 []
+        in
+            -- get elements until the next number were put by the algorithm
+            length elements == 1 || isSequential (sort elements) 0
+
+needsToCheckRow :: [[Int]] -> Int -> Int -> Bool
+needsToCheckRow grid row col =
+    col >= 0 &&
+    (length grid -1 == col || getElement grid row (col-1) == -1)
+
+needsToCheckCol :: [[Int]] -> Int -> Int -> Bool
+needsToCheckCol grid row col =
+    row >= 0 && (length grid -1 == row || getElement grid (row-1) col == -1)
+
+isSequentialRow :: [[Int]] -> Int -> Int -> Bool
+isSequentialRow grid row col = needsToCheckRow grid row col && checkForSequentialRow grid row col
+
+isSequentialCol :: [[Int]] -> Int -> Int -> Bool
+isSequentialCol grid row col = needsToCheckCol grid row col && checkForSequentialCol grid row col
+
+canAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
+canAssignNumber grid row col number =
+    number < length grid + 1
+    && not (isStatic grid row col)
+    && not (cellHasBeenAssigned grid row col)
+    && not (hasNumberInRow grid row col number)
+    && not (hasNumberInCol grid row col number)
 
 main = do
-    let grid = [[-1,  0,  0, -1],
-                [-1,  0,  0,  0],
-                [-1,  0,  1,  0],
-                [ 1,  0,  0,  0]]
-    let s = solve grid 0 0 1
-    if s then
+    let grid =  [[ 1,  1, -1,  3],
+                 [ 2,  3,  1,  4],
+                 [-1,  4,  3,  2],
+                 [-1,  2,  2,  1]]
+
+    let re = solve
+
+    if re then
+        print "BOOH YA"
         print grid
     else
-        print "could not solve"
+        print "OH NO! I could not solve"
+        print grid
