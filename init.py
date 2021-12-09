@@ -83,18 +83,28 @@ def getElementsUntilStatic(line, index, elements):
     if line[index] == -1:
         return elements
     element = line[index]
-    elements.append(element)
+    v = element
+    if element >= 10:
+        v = element/10
+    elements.append(v)
     return getElementsUntilStatic(line, (index-1), elements)
 
 # this method goes elements by elements checking if
 # diff between current element and next element is == 1
 # if diff != 1, then it is not sequential
+
+def getStaticNumber(n):
+    if n >= 10:
+        v = (n/10)
+        return v
+    else:
+        return n
 def isSequential(elements, index):
     size = len(elements)
     if (index+1) == size or size == 0:
         return True
     else:
-        diff = abs((elements[index] - elements[(index+1)]))
+        diff = abs( (getStaticNumber( elements[index] ) - getStaticNumber( elements[(index+1)]) ) )
         if diff > 1:
             return False
         else:
@@ -182,7 +192,7 @@ def getNextNonStaticCell(grid, row, col, size):
 def solveStr8ts(grid, not_tested, row, col, size):
     if row == -1 or len(not_tested[0][0]) == 0:
         return False
-    if row == size and col == size-1:
+    if row == size and col == 0:
         return True
 
     if col == size:
@@ -221,9 +231,9 @@ def populate_not_tested_numbers(matrix, row, col, size):
     return populate_not_tested_numbers(matrix, row, (col+1), size)
 
 def create_list_of_not_tested(size, index, line):
-    if index == size:
+    if index == size+1:
         return line
-    value = random.randint(1, size)
+    value = (index+1)
     if contains(line, value):
         return create_list_of_not_tested(size, index, line)
     else:
@@ -263,6 +273,7 @@ if __name__ == "__main__":
     matrix = create_matrix([], size, 0)
     
     if not solveStr8ts(grid, matrix, 0, 0, size):
+        print("BOOOOH YAHH")
         print("could not solve")
     else:
         print(grid)
