@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 module Main where
 import Data.List
 
@@ -11,15 +10,7 @@ cellHasBeenAssigned grid row col =
     in
         cell > 0
 
-addElementToCell :: [[Int]] -> Int -> Int -> Int -> [[Int]]
-addElementToCell grid row col number =
-    let line = grid !! row
-    in
-        let addedCell = take col line ++ number : drop col line
-        in
-            let newLine = deleteFromIndex (col+1) addedCell
-            in
-                take row grid  ++ newLine : drop row grid
+
 
 isStatic :: [[Int]] -> Int -> Int-> Bool
 isStatic grid row col =
@@ -138,31 +129,6 @@ canAssignNumber grid row col number =
     && not (hasNumberInRow grid row col number)
     && not (hasNumberInCol grid row col number)
 
-createListOfNotTestedNumbers :: Int -> Int -> [Int] -> [Int]
-createListOfNotTestedNumbers size index line =
-    if size == index then
-        line
-    else
-        createListOfNotTestedNumbers size (index+1) line ++ [index]
-
-createColumns :: [[Int]] -> Int -> Int -> [[Int]]
-createColumns line col size =
-    if col == size then
-        line
-    else
-        let numbers = createListOfNotTestedNumbers size 0 []
-        in
-            createColumns (line ++ [numbers]) (col+1) size
-
-createMatrixOfNotTested :: [[[Int]]] -> Int -> Int -> [[[Int]]]
-createMatrixOfNotTested matrix row size =
-    if row == size then
-        matrix
-    else
-        let line = createColumns [] size 0
-        in
-            createMatrixOfNotTested (matrix ++ [line]) (row+1) size
-
 --  Tem que testar todas as funções abaixo desta
 getNotTestedNumber :: [[[Int]]] -> Int -> Int -> Int
 getNotTestedNumber matrix row col =
@@ -190,17 +156,7 @@ populateNotTestedNumbers matrix row col size
     in
         let l = addListToCell matrix row col numbers
         in
-            populateNotTestedNumbers matrix row col size
-
-addListToCell :: [[[Int]]] -> Int -> Int -> [Int] -> [[[Int]]]
-addListToCell matrix row col numbers =
-    let line = matrix !! row
-    in
-        let cell = line !! col
-        in
-            let a = cell : [numbers]
-            in
-                matrix
+            populateNotTestedNumbers matrix row (col+1) size
 
 finishedAllPossibilities :: [[[Int]]] -> Bool
 finishedAllPossibilities matrix =
@@ -214,17 +170,17 @@ getNextNonStaticCell grid row col size =
     if row == -1 then
         []
     else 
-        let c = col-1
+        let c = (col-1)
         in
-            if col == -1 then
-                getNextNonStaticCell grid (row-1) size size
+            if c == -1 then
+                getNextNonStaticCell grid (row-1) (size-1) size
             else
-                let el = getElement grid row col
+                let el = getElement grid row c
                 in
                     if el >= 10 || el == -1 then
-                        getNextNonStaticCell grid row col size
+                        [row, c]
                     else
-                        [row, col]
+                        getNextNonStaticCell grid row c size
 
 finishedAllPossibilititiesForCell :: [[Int]] -> [[[Int]]] -> Int -> Int -> Int -> Bool
 finishedAllPossibilititiesForCell grid notTested row col size =
@@ -269,14 +225,78 @@ solve grid notTested row col size
                     in
                         solve grid notTested row col size
 
+createListOfNotTestedNumbers :: Int -> Int -> [Int] -> [Int]
+createListOfNotTestedNumbers size col line =
+    if size == col then
+        line
+    else
+        createListOfNotTestedNumbers size (col+1) (line ++ [col])
+
+createColumns :: [[Int]] -> Int -> Int -> [[Int]]
+createColumns line col size =
+    if col == size then
+        line
+    else
+        let numbers = createListOfNotTestedNumbers size 0 []
+        in
+            createColumns (line ++ [numbers]) (col+1) size
+
+createMatrixOfNotTested :: [[[Int]]] -> Int -> Int -> [[[Int]]]
+createMatrixOfNotTested matrix row size =
+    if row == size then
+        matrix
+    else
+        let line = createColumns [] 0 size
+        in
+            createMatrixOfNotTested (matrix ++ [line]) (row+1) size
+
+addElementToCell :: [[Int]] -> Int -> Int -> Int -> [[Int]]
+addElementToCell grid row col number =
+    let line = grid !! row
+    in
+        let addedCell = take col line ++ number : drop col line
+        in
+            let newLine = deleteFromIndex (col+1) addedCell
+            in
+                take row grid ++ newLine : drop row grid
+
+
+
+addListToCell :: [[[Int]]] -> Int -> Int -> [Int] -> [[[Int]]]
+addListToCell matrix row col numbers =
+    let line = matrix !! row
+    in
+        let cell = line !! col
+        in
+            let newCell = take col line ++ numbers : drop col line
+            in
+                let newLine = deleteFromIndex (col+1) newCell
+                in
+                    let newMatrix = deleteFromIndex (row) matrix
+                    in
+                        take row newMatrix ++ newLine : drop row newMatrix
+            
+
 main = do
     let grid =  [[ 0,  0, -1,  0],
                  [ 2,  0,  1,  0],
                  [-1,  0,  0,  -1],
                  [-1,  2,  0,  1]]
 
-    print (createMatrixOfNotTested [] 0 (length grid))
-    -- let s = solveGrid grid 0 0 1
+    let g = [[[0,1], [1,2]],
+             [[2,3], [3,4]]]
+
+    let size = length grid
+
+    let h = addListToCell g 1 0 [123]
+    let j = g !! 1
+    let k = j !! 0
+    print k
+   
+    let matrix = populateNotTestedNumbers g 1 1 2
+
+    print h
+    -- let s = solve grid matrix 0 0 1
 
     -- if s then
     --     print grid
