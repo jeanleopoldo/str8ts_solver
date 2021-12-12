@@ -30,8 +30,6 @@ deleteFromIndex index (a:as)
    | index == 0    = as
    | otherwise = a : deleteFromIndex (index-1) as
 
-
-
 getRowElements :: [[Int]] -> Int -> Int -> [Int]-> [Int]
 getRowElements grid row col elements =
     let e = getElement grid row col
@@ -130,20 +128,7 @@ canAssignNumber grid row col number =
     && not (hasNumberInCol grid row col number)
 
 --  Tem que testar todas as funções abaixo desta
-getNotTestedNumber :: [[[Int]]] -> Int -> Int -> Int
-getNotTestedNumber matrix row col =
-    let line = matrix !! row
-    in
-        let cell = line !! col
-        in
-            if null cell then
-                -2
-            else
-                let n = head cell
-                in
-                    let h = delete n cell
-                    in
-                        n
+
 
 populateNotTestedNumbers :: [[[Int]]] -> Int -> Int -> Int -> [[[Int]]]
 populateNotTestedNumbers matrix row col size
@@ -166,10 +151,10 @@ finishedAllPossibilities matrix =
         in
             null cell
 getNextNonStaticCell :: [[Int]] -> Int -> Int -> Int -> [Int]
-getNextNonStaticCell grid row col size = 
+getNextNonStaticCell grid row col size =
     if row == -1 then
         []
-    else 
+    else
         let c = (col-1)
         in
             if c == -1 then
@@ -194,43 +179,16 @@ finishedAllPossibilititiesForCell grid notTested row col size =
                 in
                     let a = addElementToCell grid r c 0
                     in
-                        solve grid notTested row col size
+                        -- solve grid notTested row col size
+                        True
 
-solve :: [[Int]] -> [[[Int]]] -> Int -> Int -> Int -> Bool
-solve grid notTested row col size
-  | (row == -1) || finishedAllPossibilities notTested =
-    False
-  | row == size && col == 0 =
-    True
-  | col == size =
-    solve grid notTested (row+1) 0 size
-  | col == -1 =
-    solve grid notTested (row-1) (size-1) size
-  | isStatic grid row col || cellHasBeenAssigned grid row col =
-    solve grid notTested row (col+1) size
-  | otherwise =
-    let notTestedNumber = getNotTestedNumber notTested row col
-    in
-        let previous = getElement grid row col
-        in
-            if notTestedNumber == -2 then
-                finishedAllPossibilititiesForCell grid notTested row col size
-            else
-                if canAssignNumber grid row col notTestedNumber then
-                    let add = addElementToCell grid row col notTestedNumber
-                    in
-                        solve grid notTested row col size
-                else
-                    let add = addElementToCell grid row col previous
-                    in
-                        solve grid notTested row col size
 
 createListOfNotTestedNumbers :: Int -> Int -> [Int] -> [Int]
 createListOfNotTestedNumbers size col line =
     if size == col then
         line
     else
-        createListOfNotTestedNumbers size (col+1) (line ++ [col])
+        createListOfNotTestedNumbers size (col+1) (line ++ [col+1])
 
 createColumns :: [[Int]] -> Int -> Int -> [[Int]]
 createColumns line col size =
@@ -272,33 +230,79 @@ addListToCell matrix row col numbers =
             in
                 let newLine = deleteFromIndex (col+1) newCell
                 in
-                    let newMatrix = deleteFromIndex (row) matrix
+                    let newMatrix = deleteFromIndex row matrix
                     in
                         take row newMatrix ++ newLine : drop row newMatrix
-            
 
+getNotTestedNumber :: [[[Int]]] -> Int -> Int -> Int
+getNotTestedNumber matrix row col =
+    let line = matrix !! row
+    in
+        let cell = line !! col
+        in
+            if null cell then
+                -2
+            else
+                head cell
+
+isDifferent :: Int -> Int -> Bool
+isDifferent a b = a/=b
+
+updateNotTested :: [[[Int]]] -> Int -> Int -> [[[Int]]]
+updateNotTested notTested row col =
+    let line = notTested !! row
+    in
+        let cell = line !! col
+        in
+            let element = head cell
+            in
+                let j = filter (`isDifferent` element) cell
+                in
+                    addListToCell notTested row col j
+
+solve :: [[Int]] -> [[[Int]]] -> Int -> Int -> Int -> Bool
+solve grid notTested row col size
+  | (row == -1) || finishedAllPossibilities notTested =
+    False
+  | row == size && col == 0 =
+    True
+  | col == size =
+    solve grid notTested (row+1) 0 size
+  | col == -1 =
+    solve grid notTested (row-1) (size-1) size
+  | isStatic grid row col || cellHasBeenAssigned grid row col =
+    solve grid notTested row (col+1) size
+  | otherwise =
+    let notTestedNumber = getNotTestedNumber notTested row col
+    in
+        let updatedNotTested = updateNotTested notTested row col
+        in
+            let previous = getElement grid row col
+            in
+                if notTestedNumber == -2 then
+                    finishedAllPossibilititiesForCell grid updatedNotTested row col size
+                else
+                    if canAssignNumber grid row col notTestedNumber then
+                        let add = addElementToCell grid row (col+1) notTestedNumber
+                        in
+                            solve grid updatedNotTested row (col+1) size
+                    else
+                        let add = addElementToCell grid row col previous
+                        in
+                            solve grid updatedNotTested row col size
 main = do
     let grid =  [[ 0,  0, -1,  0],
                  [ 2,  0,  1,  0],
                  [-1,  0,  0,  -1],
                  [-1,  2,  0,  1]]
-
-    let g = [[[0,1], [1,2]],
-             [[2,3], [3,4]]]
-
+    
     let size = length grid
+    
+    let notTestedNumbers = createMatrixOfNotTested [] 0 size
 
-    let h = addListToCell g 1 0 [123]
-    let j = g !! 1
-    let k = j !! 0
-    print k
-   
-    let matrix = populateNotTestedNumbers g 1 1 2
+    let s = solve grid notTestedNumbers 0 0 size
 
-    print h
-    -- let s = solve grid matrix 0 0 1
-
-    -- if s then
-    --     print grid
-    -- else
-    --     print "OH NO! I could not solve"
+    if s then
+        print grid
+    else
+        print "OH NO! I could not solve"
