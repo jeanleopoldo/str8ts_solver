@@ -122,14 +122,15 @@ isSequentialCol grid row col = needsToCheckCol grid row col && checkForSequentia
 canAssignNumber :: [[Int]] -> Int -> Int -> Int -> Bool
 canAssignNumber grid row col number =
     number < length grid + 1
-    && not (isStatic grid row col)
-    && not (cellHasBeenAssigned grid row col)
-    && not (hasNumberInRow grid row col number)
-    && not (hasNumberInCol grid row col number)
+    && not (isStatic grid row col)                -- célula não é estática
+    && not (cellHasBeenAssigned grid row col)     -- célula não tem nenhum número vindo no input
+    && not (hasNumberInRow grid row col number)   -- não tem esse número na linha
+    && not (hasNumberInCol grid row col number)   -- não tem esse número na coluna
+    && isSequentialRow grid row col               -- testa para ver se, ao fim de uma linha, se forma uma sequência
+    && isSequentialCol grid row col               -- testa para ver se, ao fim de uma coluna, se forma uma sequência 
 
---  Tem que testar todas as funções abaixo desta
 
-
+-- refaz os números não testados a partir desta célula
 populateNotTestedNumbers :: [[[Int]]] -> Int -> Int -> Int -> [[[Int]]]
 populateNotTestedNumbers matrix row col size
   | row == size && col == 0 =
@@ -167,7 +168,7 @@ getNextNonStaticCell grid row col size =
                     else
                         getNextNonStaticCell grid row c size
 
-finishedAllPossibilititiesForCell :: [[Int]] -> [[[Int]]] -> Int -> Int -> Int -> Bool
+finishedAllPossibilititiesForCell :: [[Int]] -> [[[Int]]] -> Int -> Int -> Int -> [[Int]]
 finishedAllPossibilititiesForCell grid notTested row col size =
     let nextNoStaticCell = getNextNonStaticCell grid row col size
     in
@@ -179,8 +180,7 @@ finishedAllPossibilititiesForCell grid notTested row col size =
                 in
                     let a = addElementToCell grid r c 0
                     in
-                        -- solve grid notTested row col size
-                        True
+                        solve grid notTested r c size
 
 
 createListOfNotTestedNumbers :: Int -> Int -> [Int] -> [Int]
@@ -260,49 +260,50 @@ updateNotTested notTested row col =
                 in
                     addListToCell notTested row col j
 
-solve :: [[Int]] -> [[[Int]]] -> Int -> Int -> Int -> Bool
+solve :: [[Int]] -> [[[Int]]] -> Int -> Int -> Int -> [[Int]]
 solve grid notTested row col size
-  | (row == -1) || finishedAllPossibilities notTested =
-    False
-  | row == size && col == 0 =
-    True
-  | col == size =
-    solve grid notTested (row+1) 0 size
-  | col == -1 =
-    solve grid notTested (row-1) (size-1) size
-  | isStatic grid row col || cellHasBeenAssigned grid row col =
-    solve grid notTested row (col+1) size
+  | (row == -1) || finishedAllPossibilities notTested = []  -- não conseguiu resolver
+  | (row == size) && (col == 0) = grid                      -- conseguiu resolver
+  | col == size = solve grid notTested (row+1) 0 size       -- chegou ao fim de uma linha
+  | col == -1 = solve grid notTested (row-1) (size-1) size  -- chegou ao início de uma linha na volta do backtracking
+  | isStatic grid row col || cellHasBeenAssigned grid row col = solve grid notTested row (col+1) size -- não é possível colocar numero nessa célula
   | otherwise =
     let notTestedNumber = getNotTestedNumber notTested row col
     in
-        let updatedNotTested = updateNotTested notTested row col
+        let updatedNotTested = updateNotTested notTested row col                        -- pega um número não testado para essa célula
         in
-            let previous = getElement grid row col
+            let previous = getElement grid row col                                       -- armazena número que estava na célula anteriormente
             in
                 if notTestedNumber == -2 then
-                    finishedAllPossibilititiesForCell grid updatedNotTested row col size
+                    finishedAllPossibilititiesForCell grid updatedNotTested row col size -- todos os números foram testados, volta na árvore
                 else
-                    if canAssignNumber grid row col notTestedNumber then
-                        let add = addElementToCell grid row (col+1) notTestedNumber
+                    if canAssignNumber grid row col notTestedNumber then                 -- testa se pode pôr esse número na célula
+                        let add = addElementToCell grid row col notTestedNumber
                         in
-                            solve grid updatedNotTested row (col+1) size
+                            solve grid updatedNotTested row (col+1) size                 -- coloca número na célula, vai para a próxima
                     else
-                        let add = addElementToCell grid row col previous
+                        let add = addElementToCell grid row col previous                 -- não conseguiu coloca número na célula, põe número que estava anteriormente
                         in
-                            solve grid updatedNotTested row col size
+                            solve grid updatedNotTested row col size                     -- testa célula novamente
 main = do
-    let grid =  [[ 0,  0, -1,  0],
-                 [ 2,  0,  1,  0],
-                 [-1,  0,  0,  -1],
-                 [-1,  2,  0,  1]]
-    
+    let grid =  [[-1,  0,  0, -1, -1, -1],
+                 [-1,  0,  0,  0, 50,  0],
+                 [-1,  0, 10,  0,  0,  0],
+                 [40,  0,  0,  0,  0, -1],
+                 [ 0, 60, 50,  0,  0, -1],
+                 [-1, -1, -1,  0, 10, -1]]
+
+    let h = [[[]]]
+    let is = finishedAllPossibilities h
+    print is
+
     let size = length grid
-    
+
     let notTestedNumbers = createMatrixOfNotTested [] 0 size
 
     let s = solve grid notTestedNumbers 0 0 size
 
-    if s then
-        print grid
+    if not (null s)  then
+        print s
     else
         print "OH NO! I could not solve"

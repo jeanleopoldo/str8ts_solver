@@ -14,3 +14,8 @@ It uses backtracking to solve the problem.
 - The table must be set statically via code. It accepts any table of size bigger than 0
 - The static cells are represented by -1
 - The empty cells are represented by 0
+
+## Output
+- It will be printed in the terminal/console
+    - It will be a list, where each position is also a list, representing the rows
+    - each element of the row represents a cell

@@ -123,14 +123,16 @@ def checkForSequentialRow(grid, row, col, number):
     elements.append(number)
     filtered = [ i for i in elements if i > 0 ]
     filtered.sort()
-    size == (len(filtered))
+    size = (len(filtered))
     if size == 1:
         return True
     return isSequential(filtered, 0)
 
 def checkForSequentialCol(grid, row, col, number):
     colEle   = getColElements(grid, row, col, [])
-    elements = getElementsUntilStatic(colEle, len(colEle)-1, [])
+    elements = getElementsUntilStatic(colEle, (len(colEle)-1), [])
+
+    
     elements.append(number)
 
     filtered = []
